@@ -8,7 +8,7 @@ from dspy.teleprompt import Ensemble
 from dspy.evaluate import Evaluate
 from dspy.teleprompt import BootstrapFewShot, BootstrapFewShotWithRandomSearch
 from dspy.primitives.assertions import assert_transform_module, backtrack_handler
-from collections import Counter
+from collections import defaultdict
 import re
 from datetime import datetime
 import json
@@ -430,24 +430,28 @@ def assess_thread_by_id(thread_id):
     test_thread = next(thread for thread in threads if thread.thread_id == thread_id)
     return assess_thread(test_thread)
 
+def get_agg_milestone_and_step(highest_milestone_details_arr):
+    # Initialize a dictionary to hold the counts
+    counts = defaultdict(lambda: {"total_count": 0, "steps": defaultdict(int)})
 
-def get_most_common_milestone_and_step(highest_milestone_details_arr):
-    # Count the occurrences of each milestone
-    milestone_counter = Counter(item['milestone'] for item in highest_milestone_details_arr)
+    # Iterate over the data
+    for item in highest_milestone_details_arr:
+        # Increment the total count for the milestone
+        counts[item['milestone']]["total_count"] += 1
 
-    # Get the most common milestone
-    most_common_milestone = milestone_counter.most_common(1)[0][0]
+        # Increment the count for the step within the milestone
+        counts[item['milestone']]["steps"][item['step']] += 1
 
-    # Filter the array to only include items with the most common milestone
-    most_common_milestone_items = [item for item in highest_milestone_details_arr if item['milestone'] == most_common_milestone]
+    # Convert the defaultdicts to regular dicts for JSON serialization
+    counts = {milestone: {"total_count": data["total_count"], "steps": dict(data["steps"])} for milestone, data in counts.items()}
+    # Sort the counts by milestone count in descending order
+    counts = dict(sorted(counts.items(), key=lambda item: item[1]['total_count'], reverse=True))
 
-    # Count the occurrences of each step within the most common milestone
-    step_counter = Counter(item['step'] for item in most_common_milestone_items)
+    # Sort the steps within each milestone by step count
+    for milestone in counts:
+        counts[milestone]['steps'] = dict(sorted(counts[milestone]['steps'].items(), key=lambda item: item[1], reverse=True))
 
-    # Get the most common step
-    most_common_step = step_counter.most_common(1)[0][0]
-
-    return {"milestone":most_common_milestone, "step":most_common_step}
+    return counts
 
 
 def get_full_assessment(threads, assistant_program=assess_assistant_msg, user_program=assess_user_msg, init_program=assess_init_statement):
@@ -510,7 +514,7 @@ def get_full_assessment(threads, assistant_program=assess_assistant_msg, user_pr
     # Filter out None items
     filtered_highest_milestone_details_arr = [item for item in highest_milestone_details_arr if item is not None]
 
-    aggregate["dropoff_point"]=get_most_common_milestone_and_step(filtered_highest_milestone_details_arr)
+    aggregate["dropoff_point"]=get_agg_milestone_and_step(filtered_highest_milestone_details_arr)
     
     # TODO get need to get in and out token count to calculate true pricing
     cost_multiplier = 80000
@@ -529,7 +533,7 @@ def get_full_assessment(threads, assistant_program=assess_assistant_msg, user_pr
     print(f"average cognitive load: {aggregate['cognitive_load']}")
     print(f"average sentiment: {aggregate['sentiment']}")
     print(f"average engagement: {aggregate['engagement']}")
-    print(f"most common dropoff point: {aggregate['dropoff_point']}")
+    print(f"count dropoff point: {aggregate['dropoff_point']}")
     
 
     return total, aggregate, threads
