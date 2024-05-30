@@ -1,0 +1,34 @@
+{
+  "intent": {
+    "lm": null,
+    "traces": [],
+    "train": [],
+    "demos": [],
+    "signature_instructions": "Clasify user message intent in response to context. What is the intent?",
+    "signature_prefix": "Intent:"
+  },
+  "complexity": {
+    "lm": null,
+    "traces": [],
+    "train": [],
+    "demos": [],
+    "signature_instructions": "Classify the complexity of the user message.",
+    "signature_prefix": "Complexity:"
+  },
+  "sentiment": {
+    "lm": null,
+    "traces": [],
+    "train": [],
+    "demos": [],
+    "signature_instructions": "Analyze the sentiment of the user message as a response to the context. What is the sentiment?",
+    "signature_prefix": "Sentiment:"
+  },
+  "engagement": {
+    "lm": null,
+    "traces": [],
+    "train": [],
+    "demos": [],
+    "signature_instructions": "Classify the user's engagement level.",
+    "signature_prefix": "Engagement:"
+  }
+}
